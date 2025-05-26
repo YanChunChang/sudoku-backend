@@ -27,14 +27,6 @@ exports.register = async (req, res) => {
       }
     });
 
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error('SMTP-Verbindung fehlgeschlagen:', error);
-      } else {
-        console.log('SMTP bereit zum Senden von E-Mails');
-      }
-    });
-
     await transporter.sendMail({
       from: '"Sudoku App" <noreply@sudoku.com>',
       to: email,
@@ -42,7 +34,7 @@ exports.register = async (req, res) => {
       html: `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`
     });
 
-    res.status(201).json({ messageKey: "REGISTER.SUCCESS" });
+    res.status(201).json({ messageKey: "REGISTER.SUCCESS", email });
   } catch (err) {
     console.error('Register-Fehler:', err);
     res.status(500).json({ messageKey: "REGISTER.ERROR" });
@@ -57,17 +49,21 @@ exports.verifyEmail = async (req, res) => {
   }
 
   try {
-    //Token entschlüsseln
+    //Decrypt token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    //Benutzer mit dieser E-Mail finden
+    //Find user by email
     const user = await User.findOne({ email: decoded.email });
 
     if (!user) {
       return res.status(404).send('Benutzer nicht gefunden.');
     }
 
-    //Nutzer als verifiziert markieren
+    //Check if user is already verified
+    if (user.verified) {
+      return res.status(400).send('E-Mail bereits verifiziert.');
+    }
+
     user.verified = true;
     await user.save();
 
@@ -75,5 +71,41 @@ exports.verifyEmail = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(400).send('Ungültiger oder abgelaufener Token.');
+  }
+};
+
+exports.resendVerificationEmail = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ messageKey: 'RESEND.EMAIL_NOT_FOUND' });
+    } else if (user.verified) {
+      return res.status(400).json({ messageKey: 'RESEND.ALREADY_VERIFIED' });
+    }
+    // Create a new token
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const verificationLink = `http://localhost:4200/verify?token=${token}`;
+    
+    // Send email using nodemailer
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth  : {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+    await transporter.sendMail({
+      from: '"Sudoku App"  <noreply@sudoku.com>',
+      to  : email,
+      subject: 'Verify your email',
+      html: `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`
+    });
+    res.status(200).json({ messageKey: 'RESEND.SUCCESS' });
+  }
+  catch (err) {
+    console.error('Fehler beim Senden der Verifizierungs-E-Mail:', err);
+    res.status(500).json({ messageKey: 'RESEND.ERROR' });
   }
 };

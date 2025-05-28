@@ -80,9 +80,9 @@ exports.resendVerificationEmail = async (req, res) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ messageKey: 'RESEND.EMAIL_NOT_FOUND' });
+      return res.status(404).json({ messageKey: 'VERIFY_EMAIL.RESEND.ERROR_EMAIL_NOT_FOUND' });
     } else if (user.verified) {
-      return res.status(400).json({ messageKey: 'RESEND.ALREADY_VERIFIED' });
+      return res.status(400).json({ messageKey: 'VERIFY_EMAIL.RESEND.ERROR_ALREADY_VERIFIED' });
     }
     // Create a new token
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
@@ -102,10 +102,10 @@ exports.resendVerificationEmail = async (req, res) => {
       subject: 'Verify your email',
       html: `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`
     });
-    res.status(200).json({ messageKey: 'RESEND.SUCCESS' });
+    res.status(200).json({ messageKey: 'VERIFY_EMAIL.RESEND.SUCCESS' });
   }
   catch (err) {
     console.error('Fehler beim Senden der Verifizierungs-E-Mail:', err);
-    res.status(500).json({ messageKey: 'RESEND.ERROR' });
+    res.status(500).json({ messageKey: 'VERIFY_EMAIL.RESEND.ERROR_TEXT' });
   }
 };

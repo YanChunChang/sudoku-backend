@@ -45,7 +45,7 @@ exports.verifyEmail = async (req, res) => {
   const token = req.query.token;
 
   if (!token) {
-    return res.status(400).send('Kein Token angegeben.');
+    return res.status(400).json({ messageKey: "VERIFY_EMAIL.NO_TOKEN" });
   }
 
   try {
@@ -56,21 +56,21 @@ exports.verifyEmail = async (req, res) => {
     const user = await User.findOne({ email: decoded.email });
 
     if (!user) {
-      return res.status(404).send('Benutzer nicht gefunden.');
+      return res.status(404).json({ messageKey: 'VERIFY_EMAIL.USER_NOT_FOUND' });
     }
 
     //Check if user is already verified
     if (user.verified) {
-      return res.status(400).send('E-Mail bereits verifiziert.');
+      return res.status(400).json({ messageKey: 'VERIFY_EMAIL.ALREADY_VERIFIED' });
     }
 
     user.verified = true;
     await user.save();
 
-    res.status(200).send('E-Mail erfolgreich verifiziert!');
+    res.status(200).json({ messageKey: "VERIFY_EMAIL.EMAIL_VERIFIED" });
   } catch (err) {
     console.error(err);
-    res.status(400).send('Ungültiger oder abgelaufener Token.');
+    res.status(400).json({ messageKey: "VERIFY_EMAIL.INVALID_TOKEN" });
   }
 };
 

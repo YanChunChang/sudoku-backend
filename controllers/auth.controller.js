@@ -8,7 +8,7 @@ exports.register = async (req, res) => {
 
   try {
     const existing = await User.findOne({ email });
-    if (existing){
+    if (existing) {
       return res.status(400).json({ messageKey: 'REGISTER.EMAIL_EXISTS' });
     }
 
@@ -89,18 +89,18 @@ exports.resendVerificationEmail = async (req, res) => {
     // Create a new token
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1d' });
     const verificationLink = `http://localhost:4200/verify?token=${token}`;
-    
+
     // Send email using nodemailer
     const transporter = nodemailer.createTransport({
       service: 'gmail',
-      auth  : {
+      auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       }
     });
     await transporter.sendMail({
       from: '"Sudoku App"  <noreply@sudoku.com>',
-      to  : email,
+      to: email,
       subject: 'Verify your email',
       html: `<p>Click <a href="${verificationLink}">here</a> to verify your account.</p>`
     });
@@ -112,40 +112,79 @@ exports.resendVerificationEmail = async (req, res) => {
   }
 };
 
-exports.login = async(req, res) =>{
-    const {email, password} = req.body;
-    try {
-      const user = await User.findOne({ email });
-      if (!user){
-        return res.status(400).json({ messageKey: 'LOGIN.EMAIL_NOT_FOUND'});
-      }
-
-      const passwordMatch = await bcrypt.compare(password, user.password);
-
-      if(!passwordMatch){
-        res.status(401).json({ messageKey: 'LOGIN.INVALID_PASSWORD'});
-      }
-
-      if(!user.verified){
-        res.status(403).json({ messageKey: 'LOGIN.NOT_VERIFIED'});
-      }
-
-      const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
-        expiresIn: '1d'
-      });
-
-      res.status(200).json({
-        messageKey: 'LOGIN.SUCCESS',
-        token,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email
-        }
-      });
-      
-    } catch (err) {
-      console.error('Login-Fehler:', err);
-      res.status(500).json({ messageKey: 'LOGIN.ERROR' });
+exports.login = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ messageKey: 'LOGIN.EMAIL_NOT_FOUND' });
     }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      res.status(401).json({ messageKey: 'LOGIN.INVALID_PASSWORD' });
+    }
+
+    if (!user.verified) {
+      res.status(403).json({ messageKey: 'LOGIN.NOT_VERIFIED' });
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
+
+    res.status(200).json({
+      messageKey: 'LOGIN.SUCCESS',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
+
+  } catch (err) {
+    console.error('Login-Fehler:', err);
+    res.status(500).json({ messageKey: 'LOGIN.ERROR' });
+  }
+};
+
+exports.recoverEmail = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ messageKey: 'FORGOT_PASSWORD.EMAIL_NOT_FOUND' });
+    }
+
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+      expiresIn: '1d'
+    });
+
+    const resetLink = `http://localhost:4200/reset-password?token=${token}`;
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    await transporter.sendMail({
+      from: '"Sudoku App" <noreply@sudoku.com>',
+      to: email,
+      subject: 'Reset your password',
+      html: `<p>Please click the link below to reset your password:</p>
+             <p><a href="${resetLink}">${resetLink}</a></p>`
+    });
+
+    res.status(200).json({ messageKey: 'FORGOT_PASSWORD.SUCCESS' });
+
+  } catch (err) {
+    console.error('Recover-Email Fehler:', err);
+    res.status(500).json({ messageKey: 'FORGOT_PASSWORD.ERROR' });
+  }
 };

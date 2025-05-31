@@ -8,7 +8,9 @@ exports.register = async (req, res) => {
 
   try {
     const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ messageKey: 'REGISTER.EMAIL_EXISTS' });
+    if (existing){
+      return res.status(400).json({ messageKey: 'REGISTER.EMAIL_EXISTS' });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashed, verified: false });
@@ -108,4 +110,42 @@ exports.resendVerificationEmail = async (req, res) => {
     console.error('Fehler beim Senden der Verifizierungs-E-Mail:', err);
     res.status(500).json({ messageKey: 'VERIFY_EMAIL.RESEND.ERROR_TEXT' });
   }
+};
+
+exports.login = async(req, res) =>{
+    const {email, password} = req.body;
+    try {
+      const user = await User.findOne({ email });
+      if (!user){
+        return res.status(400).json({ messageKey: 'LOGIN.EMAIL_NOT_FOUND'});
+      }
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+
+      if(!passwordMatch){
+        res.status(401).json({ messageKey: 'LOGIN.INVALID_PASSWORD'});
+      }
+
+      if(!user.verified){
+        res.status(403).json({ messageKey: 'LOGIN.NOT_VERIFIED'});
+      }
+
+      const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+        expiresIn: '1d'
+      });
+
+      res.status(200).json({
+        messageKey: 'LOGIN.SUCCESS',
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email
+        }
+      });
+      
+    } catch (err) {
+      console.error('Login-Fehler:', err);
+      res.status(500).json({ messageKey: 'LOGIN.ERROR' });
+    }
 };

@@ -188,3 +188,30 @@ exports.recoverEmail = async (req, res) => {
     res.status(500).json({ messageKey: 'FORGOT_PASSWORD.ERROR' });
   }
 };
+
+exports.resetPassword = async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ messageKey: 'RESET_PASSWORD.INVALID_TOKEN' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    res.status(200).json({ messageKey: 'RESET_PASSWORD.SUCCESS' });
+
+  } catch (err) {
+    console.error('Reset-Password Fehler:', err);
+    res.status(400).json({ messageKey: 'RESET_PASSWORD.INVALID_TOKEN' });
+  }
+};
+

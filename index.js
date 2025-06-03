@@ -12,6 +12,10 @@ app.use(express.json());
 const authRoutes = require('./routes/auth.routes');
 app.use('/api/auth', authRoutes);
 
+// Leaderboard-Routen
+const leaderboardRoutes = require('./routes/leaderboard.routes');
+app.use('/api/leaderboard', leaderboardRoutes);
+
 //start server
 const PORT = process.env.PORT || 3000;
 

@@ -130,7 +130,7 @@ exports.login = async (req, res) => {
       res.status(403).json({ messageKey: 'LOGIN.NOT_VERIFIED' });
     }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, {
+    const token = jwt.sign({ id: user._id, email: user.email, username: user.name }, process.env.JWT_SECRET, {
       expiresIn: '1d'
     });
 

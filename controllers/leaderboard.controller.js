@@ -6,14 +6,14 @@ exports.submitScore = async (req, res) => {
         console.log('req.user:', req.user);
 
         if (!req.user || !req.user.username) {
-            return res.status(400).json({ message: 'Missing user data' });
+            return res.status(400).json({ messageKey: 'DIALOG_NICKNAME.ERROR_USERNAME' });
         }
 
         nickname = req.user.username;
         userType = 'registered';
 
         if (!playerMode || !playMode || !level || !time) {
-            return res.status(400).json({ message: 'Missing required fields' });
+            return res.status(400).json({ messageKey: 'DIALOG_NICKNAME.ERROR_REQUIRED_FIELD' });
         }
 
         const newEntry = new LeaderboardEntry({
@@ -27,10 +27,10 @@ exports.submitScore = async (req, res) => {
         });
 
         await newEntry.save();
-        res.status(201).json({ message: 'Score saved!' });
+        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT' });
     } catch (error) {
         console.error('Error saving score:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ messageKey: 'DIALOG_NICKNAME.ERROR_TEXT' });
     }
 }
 
@@ -39,7 +39,7 @@ exports.submitScoreGuest = async (req, res) => {
         const { nickname, playerMode, playMode, level, time, date } = req.body;
 
         if (!playerMode || !playMode || !level || !time) {
-            return res.status(400).json({ message: 'Missing required fields' });
+            return res.status(400).json({ messageKey: 'DIALOG_NICKNAME.ERROR_REQUIRED_FIELD' });
         }
 
         const userType = 'guest';
@@ -56,10 +56,10 @@ exports.submitScoreGuest = async (req, res) => {
 
         await newEntry.save();
 
-        res.status(201).json({ message: 'Score saved (guest)' });
+        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT' });
     } catch (error) {
         console.error('Error saving guest score:', error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ messageKey: 'DIALOG_NICKNAME.ERROR_TEXT' });
     }
 };
 

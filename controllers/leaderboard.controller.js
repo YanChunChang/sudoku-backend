@@ -27,7 +27,8 @@ exports.submitScore = async (req, res) => {
         });
 
         await newEntry.save();
-        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT' });
+
+        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT', id: newEntry._id });
     } catch (error) {
         console.error('Error saving score:', error);
         res.status(500).json({ messageKey: 'DIALOG_NICKNAME.ERROR_TEXT' });
@@ -56,7 +57,7 @@ exports.submitScoreGuest = async (req, res) => {
 
         await newEntry.save();
 
-        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT' });
+        res.status(201).json({ messageKey: 'DIALOG_NICKNAME.SUCCESS_TEXT', id: newEntry._id });
     } catch (error) {
         console.error('Error saving guest score:', error);
         res.status(500).json({ messageKey: 'DIALOG_NICKNAME.ERROR_TEXT' });

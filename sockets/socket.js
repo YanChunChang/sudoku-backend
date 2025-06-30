@@ -14,7 +14,7 @@ function setupSocket(server) {
         const { roomId, userId, level, username } = socket.handshake.query;
         console.log("🔁 Reconnect erkannt:", { roomId, userId, level, username });
 
-        if (roomId && userId && level && username ) {
+        if (roomId && userId && level && username) {
             console.log("🔁 Reconnect erkannt:", { roomId, userId, username });
 
             // Spieler manuell wieder dem Raum hinzufügen
@@ -34,7 +34,7 @@ function setupSocket(server) {
 
             if (rooms[roomId]?.board) {
                 socket.emit("sudokuboard", rooms[roomId].board);
-              }
+            }
 
             if (!alreadyInRoom) {
                 const newPlayer = {
@@ -82,6 +82,21 @@ function setupSocket(server) {
                 io.to(socket.id).emit("joined-room", { success: false, reason: "Room full" });
             }
         });
+
+        socket.on("cell-update", ({ row, col, value, roomId }) => {
+            console.log(`📝 Spieler ${rooms[roomId]} änderte Zelle [${row}][${col}] auf ${value}`);
+            // An alle anderen Spieler im Raum weiterleiten
+            socket.to(roomId).emit("cell-update", { row, col, value });
+        });
+
+        socket.on('cell-focus', ({ roomId, username, row, col }) => {
+            socket.to(roomId).emit('cell-focus-update', { username, row, col });
+        });
+
+        socket.on('mouse-position', ({ roomId, userId, username, x, y }) => {
+            socket.to(roomId).emit('mouse-update', { userId, username, x, y });
+        });
+
         socket.on("disconnect", () => {
             console.log("disconnect......");
             for (const roomId in rooms) {
@@ -97,7 +112,7 @@ function setupSocket(server) {
                         console.log(`❌ Raum ${roomId} gelöscht`);
                     } else if (disconnectedPlayer) {
                         // Andere Spieler im Raum informieren
-                        io.to(roomId).emit("player-left", disconnectedPlayer.name);
+                        io.to(roomId).emit("player-left", { username: disconnectedPlayer.name, userId: disconnectedPlayer.userId });
                     }
                 }
             }

@@ -49,10 +49,20 @@ function setupSocket(server) {
 
             // Optional: Spieler informieren
             socket.emit("reconnected", { success: true });
+
+            socket.on('request-start-time', (roomId, callback) => {
+                const room = rooms[roomId];
+                
+                if (room && room.startTime) {
+                  callback({ startTime: room.startTime }); 
+                } else {
+                  callback({ startTime: null });
+                }
+              });
         }
         console.log("🔌 Socket connected:", socket.id);
 
-        socket.on("join-room", (roomId, userId, level, username) => {
+        socket.on("join-room", (roomId, userId, level, username,) => {
             console.log("test:", level);
             if (!rooms[roomId]) {
                 const { initialBoard, solvedBoard } = generateSudokuBoard(level);
@@ -76,6 +86,10 @@ function setupSocket(server) {
 
                 if (rooms[roomId].players.length === 2) {
                     io.to(roomId).emit("start-game");
+                    const startTime = Date.now();
+                    rooms[roomId].startTime = startTime;
+
+                    io.to(roomId).emit("timer-start", startTime);
                     io.to(roomId).emit("sudokuboard", rooms[roomId].board);
                 }
             } else {
